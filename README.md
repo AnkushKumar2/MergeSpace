@@ -1,117 +1,70 @@
 # MergeSpace
 
-**MergeSpace** is a shared coding workspace for teams that want to write, review, and experiment with code together in real time. Create a private workspace, invite collaborators, and work in the same files without overwriting one another's changes. The app combines a polished browser editor with a persistent backend, so a session can continue across refreshes and reconnects.
+MergeSpace is a collaborative coding workspace for teams to build, review and experiment with code together in real-time. Create a workspace, invite collaborators and work on shared files simultaneously without overwriting each other's work.
 
-## What it does
+## Live Demo
 
-MergeSpace gives each team a secure place to organize small web projects and collaborate live. Workspace owners can create and manage spaces, invite people by email, assign roles, and control access. Members can edit shared files together, see who is currently active, switch between files, and preview their HTML/CSS/JavaScript as they work.
+Give MergeSpace a try at this [live demo](https://mergespace.insforge.site). Create a workspace, invite collaborators and start coding in real-time!
 
-## Features
+## 🧠 Core Architecture & Real-Time Engine
 
-- **Live, conflict-free editing** — Yjs CRDT synchronization keeps concurrent changes in sync across every connected editor.
-- **Persistent collaboration sessions** — Yjs room data is retained by the Socket.IO server, helping users resume work after reconnecting or restarting the container.
-- **Team workspaces** — Create, rename, and remove dedicated spaces for different projects or groups.
-- **Secure access and invitations** — Sign in with email/password, email code, Google, or GitHub (when enabled); invite collaborators by email and let them accept or decline.
-- **Role-based permissions** — Workspace owners manage settings, people, roles, and files; editors can collaborate within the workspace.
-- **Multi-file project editor** — Create, select, save, and delete HTML, CSS, and JavaScript files from one workspace.
-- **Developer-friendly editor** — Monaco Editor provides syntax-aware editing, snippets, suggestions, keyboard saving, and a dark coding experience.
-- **Live presence** — See active collaborators and connection status while you work.
-- **Instant preview** — Open a browser preview to check HTML, CSS, and JavaScript output without leaving the workspace.
-- **Reliable file updates** — Files are saved to InsForge and file-tab changes are broadcast to workspace members.
+- Conflict-Free Real-Time Editing: Built-in Yjs CRDT (Conflict-free Replicated Data Type) primitives used with Monaco Editor for sub-millisecond text synchronization and to prevent document state divergence among multiple users
+- Persistent Session State: Built internal server-side Yjs room state pipeline backed by Socket.IO and stores active workspace session states, cursor positions and document histories to persist across network reconnections
+- Granular Security & Row-Level Authorization: Custom built InsForge PostgreSQL Row-Level Security (RLS) policies and Remote Procedure Calls (RPC) to enforce strict workspace boundary isolation, tokenized email invitations and owner/editor permissions
+- Live Collaborative Telemetry: Built-in Socket.IO presence channels and y-monaco awareness wrappers for rendering active user badges, selection highlights and real-time cursor indicators to active project files
+- Automated Web Preview Pipeline: Built a sandboxed web preview runner inside React client capable of dynamically bundling and executing HTML, CSS and JavaScript files in memory
 
-## Tech stack
+## 🛠️ Tech Stack & Keywords
 
-| Area | Technology |
-| --- | --- |
-| Frontend | React 19, Vite, CSS |
-| Code editor | Monaco Editor, `@monaco-editor/react` |
-| Real-time editing | Yjs, y-monaco, y-socket.io |
-| Real-time transport & presence | Socket.IO |
-| Server | Node.js, Express 5 |
-| Backend platform | InsForge — Auth, PostgreSQL database, realtime events, and row-level access control |
-| Deployment | Docker, Docker Compose |
+- Frontend: React 19, Vite, Monaco Editor (`@monaco-editor/react`), CSS, Context API
+- Real-Time Layer: Yjs, `y-monaco`, `y-socket.io`, Socket.IO Client
+- Backend: Node.js, Express 5, Socket.IO Server
+- Platform & Security: InsForge (PostgreSQL, Auth, Realtime Engine, Row-Level Security)
+- Deployment & Infrastructure: Docker, Docker Compose, Linux/Node Containers
 
-## Run MergeSpace locally
+## 📋 Features
 
-### Prerequisites
+- Team Workspaces: Create, isolate, rename, and manage dedicated project environments
+- Secure Authentication: Multi-provider authentication supporting Email/Password, Magic Link Code, Google, and GitHub OAuth
+- Role-Based Access Control (RBAC): Workspace owners manage administrative configurations, member access and permissions while editors can contribute live within allowed boundaries
+- Multi-File Workspace Management: Fullfilesystem operations (create, update, delete, rename) of web standard formats (`.html`, `.css`, `.js`)
+- Developer-Grade Editor: Syntax highlighting, inline autocomplete, keyboard shortcuts (`Ctrl/Cmd + S`) and dark theme powered by VS Code's Monaco Editor
+- Instant Preview: Live single-click web rendering of active multi-file code execution outside of workspace
 
-- Node.js 20 or newer
-- An InsForge project
-- Docker and Docker Compose (optional, for containerized use)
+## 🚀 Usage
 
-### 1. Configure InsForge
+1. Open the [MergeSpace live demo](https://mergespace.insforge.site).
+2. Sign in or create an account.
+3. Create a workspace from the dashboard.
+4. Add project files (`.html`, `.css`, `.js`) and invite team members from Workspace Settings.
+5. Edit code collaboratively in real-time and toggle the live preview to verify changes.
 
-Link the repository to an InsForge project and apply the included database migrations:
-
-```bash
-npx @insforge/cli login
-npx @insforge/cli link --project-id <your-project-id>
-npx @insforge/cli db migrations up --all
-```
-
-Enable the authentication methods you plan to use in InsForge. For local development, include `http://localhost:5173` in the allowed redirect URLs. Google and GitHub sign-in also require their corresponding providers to be configured in InsForge.
-
-### 2. Add environment variables
-
-Create `Frontend/vite-project/.env.local` and add your InsForge project URL and anonymous key:
-
-```env
-VITE_INSFORGE_BASE_URL=https://your-project.insforge.app
-VITE_INSFORGE_ANON_KEY=your-anon-key
-```
-
-Keep this file private—never commit keys to the repository.
-
-### 3. Start the app
-
-Install the dependencies for the root scripts, frontend, and realtime server, then launch both services:
-
-```bash
-npm install
-npm --prefix Frontend/vite-project install
-npm --prefix backend install
-npm run dev
-```
-
-Open `http://localhost:5173`. The Vite client connects to the Socket.IO server at `http://localhost:3000` during local development.
-
-## Use with Docker
-
-Place the same InsForge values in a root `.env` file:
-
-```env
-VITE_INSFORGE_BASE_URL=https://your-project.insforge.app
-VITE_INSFORGE_ANON_KEY=your-anon-key
-MERGESPACE_PORT=3002
-```
-
-Then build and start the single-container application:
-
-```bash
-docker compose up --build
-```
-
-Visit `http://localhost:3002`. Docker stores Yjs collaboration data in a named volume so live-document state survives container recreation.
-
-## How to use it
-
-1. Open MergeSpace and create an account or sign in.
-2. Create a workspace from the dashboard.
-3. Open the workspace editor and add the files your project needs.
-4. Invite collaborators from **Workspace settings** and choose their role.
-5. Work in the same files at the same time—edits sync live and the active-user indicator shows who is online.
-6. Toggle the preview when working with HTML, CSS, and JavaScript, then save with the button or `Ctrl/Cmd + S`.
-
-## Project structure
+## 🏗️ Project Architecture
 
 ```text
-Frontend/vite-project/  React + Vite application and editor UI
-backend/                Express, Socket.IO, and Yjs collaboration server
-migrations/             InsForge PostgreSQL schema, policies, and RPC functions
-Dockerfile              Production single-image build
-docker-compose.yml      Local container orchestration
-```
++------------------------------+
+|    Browser Client    |
+| (React 19 + Monaco Editor) |
++--------------+---------------+
+|
++------------------------+------------------------+
+|                         |
+v (WebSocket / Socket.IO)             v (HTTP / REST / RLS)
++------------------------------+         +------------------------------+
+|  Node.js & Express Server  |         |    InsForge Backend    |
+| (Yjs Sync & Room Provider) |         | (PostgreSQL, Auth & Storage) |
++--------------+---------------+         +------------------------------+
+|
+v
++------------------------------+
+|  Persistent Yjs Memory   |
+| (Session & Document State) |
++------------------------------+
 
----
-
-MergeSpace turns a browser tab into a shared, permission-aware coding room—built for the moments when working together matters more than passing files around.
+📁 Repository Structure
+Plaintext
+├── Frontend/vite-project/  # React 19 SPA, Monaco Editor UI, InsForge SDK integration
+├── backend/                # Express 5 server, Socket.IO transport, Yjs CRDT room provider
+├── migrations/             # PostgreSQL database schema, RLS policies, and RPC functions
+├── Dockerfile              # Multi-stage production container build
+└── docker-compose.yml      # Container orchestration and volume bindings
