@@ -1,0 +1,14 @@
+.muted{font-size:14px}
+.main-nav button,.sidebar-bottom>button{font-size:14px}
+.user-name{font-size:14px}
+.sync-status,.live-label{font-size:13px}
+.workspace-switcher strong{font-size:14px}
+.section-heading h2{font-size:17px}
+.card-details h3{font-size:16px}
+.card-details p,.card-details small{font-size:12px}
+.activity-item,.member-row>span:nth-child(2){font-size:14px}
+.member-row small,.settings-nav button,.form-section label{font-size:12px}
+.form-section input,.form-section textarea{font-size:14px}
+.file-tabs button{font-size:13px}
+.editor-controls,.workspace-footer{font-size:12px}
+.auth-form input{font-size:14px}

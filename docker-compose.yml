@@ -1,0 +1,18 @@
+services:
+  mergespace:
+    container_name: mergespace
+    build:
+      context: .
+      args:
+        VITE_INSFORGE_BASE_URL: ${VITE_INSFORGE_BASE_URL:-}
+        VITE_INSFORGE_ANON_KEY: ${VITE_INSFORGE_ANON_KEY:-}
+        NEXT_PUBLIC_INSFORGE_URL: ${NEXT_PUBLIC_INSFORGE_URL:-}
+        NEXT_PUBLIC_INSFORGE_ANON_KEY: ${NEXT_PUBLIC_INSFORGE_ANON_KEY:-}
+    ports:
+      - "${MERGESPACE_PORT:-3002}:3000"
+    volumes:
+      - mergespace_yjs:/app/.yjs
+    restart: unless-stopped
+
+volumes:
+  mergespace_yjs:

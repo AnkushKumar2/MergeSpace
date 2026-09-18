@@ -1,0 +1,16 @@
+{
+  "name": "mergespace",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:backend": "node backend/server.js",
+    "dev:frontend": "npm --prefix Frontend/vite-project run dev",
+    "dev": "node -e \"const {spawn}=require('child_process'); spawn('node',['server.js'],{cwd:'backend',stdio:'inherit',shell:true}); spawn('npm',['run','dev'],{cwd:'Frontend/vite-project',stdio:'inherit',shell:true});\"",
+    "build": "npm --prefix Frontend/vite-project run build && node -e \"const fs=require('fs'),path=require('path');function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const e of fs.readdirSync(s,{withFileTypes:true})){const sp=path.join(s,e.name),dp=path.join(d,e.name);e.isDirectory()?cp(sp,dp):fs.copyFileSync(sp,dp)}}cp('Frontend/vite-project/dist','backend/public');console.log('Build complete and synced to backend/public');\"",
+    "start": "node backend/server.js"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}
