@@ -29,17 +29,43 @@ function timeLabel(date) {
   return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
 }
 
+function LinkedText({ text }) {
+  const parts = String(text || "").split(/(https?:\/\/[^\s<]+)/gi)
+  return parts.map((part, index) => /^https?:\/\//i.test(part)
+    ? <a key={index} href={part} target="_blank" rel="noopener noreferrer">{part}</a>
+    : part)
+}
+
+function RichMessage({ text }) {
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef(null)
+  useEffect(() => () => window.clearTimeout(timerRef.current), [])
+  const segments = String(text || "").split(/```([^\n`]*)\n([\s\S]*?)```/g)
+  return segments.map((segment, index) => {
+    if (index % 3 === 1) {
+      const code = segments[index + 1]
+      return <pre className="chat-code" key={index}><div className="chat-code-header"><span>{segment || "code"}</span><button type="button" onClick={async () => {
+        try { await navigator.clipboard.writeText(code); setCopied(true); window.clearTimeout(timerRef.current); timerRef.current = window.setTimeout(() => setCopied(false), 1500) } catch { /* ignore: clipboard unavailable */ }
+      }}>{copied ? "Copied" : "Copy"}</button></div><code>{code}</code></pre>
+    }
+    if (index % 3 === 2) return null
+    return <LinkedText key={index} text={segment} />
+  })
+}
+
 function dayKey(date) {
   const parsed = new Date(date)
   return `${parsed.getFullYear()}-${parsed.getMonth()}-${parsed.getDate()}`
 }
 
-export default function ChatPanel({ open, onClose, currentUser, chat }) {
+export default function ChatPanel({ open, onClose, currentUser, chat, isOwner = false }) {
   const listRef = useRef(null)
   const textareaRef = useRef(null)
   const wasNearBottom = useRef(true)
   const [showJump, setShowJump] = useState(false)
   const [draft, setDraft] = useState("")
+  const [editingId, setEditingId] = useState(null)
+  const [editDraft, setEditDraft] = useState("")
   const messages = chat?.messages || []
   const latestId = messages[messages.length - 1]?.id
 
@@ -80,6 +106,13 @@ export default function ChatPanel({ open, onClose, currentUser, chat }) {
     wasNearBottom.current = true
     setShowJump(false)
   }
+  const saveEdit = async (event, id) => {
+    event?.preventDefault()
+    const body = editDraft.trim()
+    if (!body || body.length > 2000 || !chat?.edit) return
+    await chat.edit(id, body)
+    setEditingId(null)
+  }
 
   return (
     <aside className="chat-panel" aria-label="Workspace chat">
@@ -105,7 +138,8 @@ export default function ChatPanel({ open, onClose, currentUser, chat }) {
                 {!grouped ? <MessageAvatar message={message} /> : <span className="chat-avatar-spacer" />}
                 <div className="chat-message-content">
                   {!grouped && <div className="chat-message-meta"><strong>{message.name || "Unknown"}</strong><time dateTime={message.created_at}>{timeLabel(message.created_at)}</time></div>}
-                  <div className="chat-message-body">{message.body}{message.edited_at && <span className="chat-edited"> (edited)</span>}</div>
+                  {editingId === message.id ? <form className="chat-edit-form" onSubmit={(event) => saveEdit(event, message.id)}><textarea autoFocus maxLength={2000} value={editDraft} onChange={(event) => setEditDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditingId(null) } else if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(event, message.id) } }} /><div><button type="button" onClick={() => setEditingId(null)}>Cancel</button><button type="submit" disabled={!editDraft.trim()}>Save</button></div></form> : <div className="chat-message-body"><RichMessage text={message.body} />{message.edited_at && <span className="chat-edited"> (edited)</span>}</div>}
+                  {(own || isOwner) && !message.pending && <div className="chat-message-actions">{own && <button type="button" onClick={() => { setEditingId(message.id); setEditDraft(message.body || "") }}>Edit</button>}<button type="button" onClick={() => { const other = !own; if (window.confirm(other ? "Delete someone else's message? This cannot be undone." : "Delete your message? This cannot be undone.")) chat.remove?.(message.id) }}>Delete</button></div>}
                   {message.failed && <div className="chat-failure"><span>Message failed to send</span><button type="button" onClick={() => chat.retry?.(message.id)}>Retry</button></div>}
                 </div>
               </article>

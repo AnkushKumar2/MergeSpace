@@ -35,6 +35,21 @@
 .chat-message-meta strong { overflow: hidden; color: #e4e7e4; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .chat-message-meta time { flex: 0 0 auto; color: #818b85; font-family: "IBM Plex Mono", monospace; font-size: 10px; }
 .chat-message-body { color: #d0d4d1; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.chat-message-body a { color: #f08b78; text-decoration: underline; text-underline-offset: 2px; }
+.chat-code { margin: 8px 0; overflow: hidden; color: #dce2de; background: #191c1c; border: 1px solid #3f4240; border-radius: 6px; white-space: pre-wrap; }
+.chat-code-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; color: #929c96; background: #202323; border-bottom: 1px solid #3f4240; font: 10px "IBM Plex Mono", monospace; }
+.chat-code-header button { padding: 3px 7px; color: #e9e9e6; background: #343837; border: 0; border-radius: 4px; cursor: pointer; font: inherit; }
+.chat-code code { display: block; overflow-x: auto; padding: 9px; font: 11px/1.5 "IBM Plex Mono", monospace; white-space: pre; }
+.chat-message-actions { display: flex; gap: 5px; margin-top: 3px; opacity: 0; transition: opacity .15s ease; }
+.chat-message:hover .chat-message-actions, .chat-message:focus-within .chat-message-actions { opacity: 1; }
+.chat-message-actions button, .chat-edit-form button { padding: 3px 7px; color: #b8c0bb; background: #303433; border: 1px solid #454a47; border-radius: 4px; font-size: 10px; cursor: pointer; }
+.chat-message-actions button:hover, .chat-edit-form button:hover { color: #fff; border-color: var(--coral); }
+.chat-edit-form { margin-top: 4px; }
+.chat-edit-form textarea { width: 100%; min-height: 64px; box-sizing: border-box; padding: 8px; color: #e9e9e6; background: #1d2020; border: 1px solid #3f4240; border-radius: 6px; outline: none; font: inherit; font-size: 12px; resize: vertical; }
+.chat-edit-form textarea:focus { border-color: var(--coral); }
+.chat-edit-form > div { display: flex; justify-content: flex-end; gap: 5px; margin-top: 4px; }
+.chat-edit-form button[type="submit"] { color: #211f1d; background: var(--coral); border-color: var(--coral); }
+.chat-edit-form button:disabled { opacity: .45; cursor: default; }
 .chat-message.is-own .chat-message-body { color: #f1c0b5; }
 .chat-message.is-pending { opacity: .52; }
 .chat-edited { color: #87918b; font-size: 10px; font-style: italic; }
