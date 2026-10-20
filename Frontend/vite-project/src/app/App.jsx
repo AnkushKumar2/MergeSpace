@@ -1163,6 +1163,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     providerRef.current = provider
     provider.on("status", ({ status }) => setSocketConnected(status === "connected"))
     let binding = null
+    let seedTimeout = null
     const attachBinding = () => {
       if (binding || providerRef.current !== provider) return
       const editor = editorRef.current
@@ -1175,16 +1176,21 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     const seedKey = `workspace-${workspaceId}-file-${file.id}`
     const onSync = (synced) => {
       if (!synced) return
-      if (!ytext.length && !seededYjsRooms.has(seedKey)) {
-        seededYjsRooms.add(seedKey)
-        // Do this only after the server sync: the shared Yjs document wins when
-        // another collaborator has already created it.
-        const initialContent = file.content || ""
-        if (initialContent) ytext.insert(0, initialContent)
-      }
-      // Do not bind an empty, not-yet-synchronized Y.Text to Monaco. That
-      // was erasing the visible file while switching/adding/removing tabs.
-      attachBinding()
+      window.clearTimeout(seedTimeout)
+      seedTimeout = window.setTimeout(() => {
+        if (providerRef.current !== provider || ydocRef.current !== ydoc) return
+        if (ytext.length === 0 && !seededYjsRooms.has(seedKey)) {
+          seededYjsRooms.add(seedKey)
+          const seedDoc = new Y.Doc()
+          seedDoc.clientID = 1
+          seedDoc.getText("monaco").insert(0, file.content || "")
+          Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(seedDoc))
+          seedDoc.destroy()
+        }
+        // Do not bind an empty, not-yet-synchronized Y.Text to Monaco. That
+        // was erasing the visible file while switching/adding/removing tabs.
+        attachBinding()
+      }, 400)
     }
     provider.on("sync", onSync)
     provider.awareness.setLocalStateField("user", { id: currentUser?.id, name: currentUser?.name || "You", color: "#ff6b4a" })
@@ -1201,6 +1207,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     return () => {
       ytext.unobserve(onChange)
       provider.off("sync", onSync)
+      window.clearTimeout(seedTimeout)
       // Do not let an old file's delayed cleanup clear a newer binding.
       binding?.destroy()
       if (bindingRef.current === binding) bindingRef.current = null
