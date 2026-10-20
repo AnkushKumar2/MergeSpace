@@ -1068,6 +1068,8 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
   const [isOwner, setIsOwner] = useState(false)
   const [socketConnected, setSocketConnected] = useState(false)
   const [awareness, setAwareness] = useState(null)
+  const [awarenessActivity, setAwarenessActivity] = useState(() => new Map())
+  const [nowMs, setNowMs] = useState(0)
   const editorRef = useRef(null)
   const bindingRef = useRef(null)
   const providerRef = useRef(null)
@@ -1076,6 +1078,36 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
   const activeFileRef = useRef(activeFile)
 
   useRemoteCursorStyles(awareness, activeFile?.id)
+
+  useEffect(() => {
+    if (!awareness) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when awareness is gone
+      setAwarenessActivity(new Map())
+      return undefined
+    }
+    const refreshAwarenessActivity = () => {
+      const activityByUser = new Map()
+      awareness.getStates().forEach((state) => {
+        const userId = state?.user?.id
+        if (!userId) return
+        activityByUser.set(userId, {
+          color: state.user.color,
+          lastActive: state.activity?.lastActive || 0,
+        })
+      })
+      setAwarenessActivity(activityByUser)
+      setNowMs(Date.now())
+    }
+    refreshAwarenessActivity()
+    awareness.on("change", refreshAwarenessActivity)
+    const timer = window.setInterval(refreshAwarenessActivity, 1500)
+    const clockTimer = window.setInterval(() => setNowMs(Date.now()), 1000)
+    return () => {
+      window.clearInterval(timer)
+      window.clearInterval(clockTimer)
+      awareness.off("change", refreshAwarenessActivity)
+    }
+  }, [awareness])
 
   useEffect(() => { activeFileRef.current = activeFile }, [activeFile])
 
@@ -1286,7 +1318,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     }
   }
   return <main className="workspace-page">
-    <div className="workspace-header"><div><button className="breadcrumb">Workspaces</button><span> / </span><strong>{workspace}</strong><p className="muted">A shared, conflict-free coding session.</p></div><div className="workspace-actions"><button className="outline-button chat-toggle" onClick={() => { const opening = !chatOpen; setChatOpen(opening); if (opening) chat.markRead() }}>Chat{chat.unread > 0 && <span className="chat-unread-badge">{chat.unread}</span>}</button><span className="presence-more" title={`${memberCount} workspace members`}>{onlineUsers.length}</span><button className="outline-button" onClick={onSettings}>⚙</button><button className="primary-button small-button" onClick={persistNow}>{saved ? "Saved" : "Save changes"}</button></div></div>
+    <div className="workspace-header"><div><button className="breadcrumb">Workspaces</button><span> / </span><strong>{workspace}</strong><p className="muted">A shared, conflict-free coding session.</p></div><div className="workspace-actions"><div className="presence-stack">{onlineUsers.map((user) => { const userId = user.userId || user.id; const activity = awarenessActivity.get(userId); const isEditing = activity && nowMs - activity.lastActive < 5000; const name = user.name || "Guest"; return <span key={userId || user.presenceId || name} className="avatar small" style={{ backgroundColor: user.color || "var(--coral)", color: "#fff", ...(isEditing ? { boxShadow: `0 0 0 2px ${activity.color}` } : {}) }} title={isEditing ? `${name} is editing ${activeFile?.name || "a file"}` : undefined}>{(name[0] || "M").toUpperCase()}</span> })}</div><button className="outline-button chat-toggle" onClick={() => { const opening = !chatOpen; setChatOpen(opening); if (opening) chat.markRead() }}>Chat{chat.unread > 0 && <span className="chat-unread-badge">{chat.unread}</span>}</button><span className="presence-more" title={`${memberCount} workspace members`}>{onlineUsers.length}</span><button className="outline-button" onClick={onSettings}>⚙</button><button className="primary-button small-button" onClick={persistNow}>{saved ? "Saved" : "Save changes"}</button></div></div>
     <div className="editor-toolbar"><div className="file-tabs">{visibleFiles.map((file) => <button key={file.id || file.name} className={activeFile?.id === file.id ? "selected" : ""} onClick={() => selectFile(file)}><span className="file-icon">{file.icon || "<>"}</span>{file.name}{isOwner && <span className="close-file" role="button" aria-label={`Delete ${file.name}`} onClick={(event) => { event.stopPropagation(); removeFile(file) }}>×</span>}</button>)}{isOwner && <button className="new-file" aria-label="Create file" onClick={addFile}>+</button>}</div><div className="editor-controls"><span className="live-label"><span className="status-dot" style={{ backgroundColor: socketConnected ? "#5bc38b" : "#eab308" }} />{socketConnected ? "Live synced" : "Connecting…"}</span><button className="preview-toggle" onClick={() => setPreviewOpen(!previewOpen)}>{previewOpen ? "Hide preview" : "Show preview"}</button></div></div>
     <div className={`editor-layout ${previewOpen ? "with-preview" : "full-editor"}`}><div className="editor-pane"><div className="editor-title">{activeFile?.name}<span className="editor-title-status">{saved ? "Saved" : "Unsaved changes"}</span></div><Editor key={activeFile?.id || activeFile?.name} height="100%" language={activeFile?.language} defaultValue="" theme="vs-dark" onMount={(editor, monaco) => { editorRef.current = editor; bindEditor(editor); configureEditorCompletions(monaco); editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, persistNow) }} onChange={(value) => { const current = activeFileRef.current; if (!current?.id) return; const content = value || ""; setWorkspaceFiles((items) => items.map((item) => item.id === current.id ? { ...item, content } : item)); setSaved(false); scheduleSave(current, content) }} options={{ minimap: { enabled: false },fontSize: 14, padding: { top: 28 }, smoothScrolling: true, quickSuggestions: { other: true, comments: false, strings: true }, suggestOnTriggerCharacters: true, tabCompletion: "on" }} /></div>{previewOpen && <LivePreview files={visibleFiles} />}</div>
     <div className="workspace-footer"><span>Edits sync live with Yjs CRDT</span><span>{onlineUsers.length} active now · {memberCount} total members</span></div>
