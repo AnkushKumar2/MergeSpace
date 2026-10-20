@@ -10,6 +10,8 @@ import { MonacoBinding } from "y-monaco"
 import { io } from "socket.io-client"
 import ChatPanel from "../components/ChatPanel"
 import { useWorkspaceChat } from "../hooks/useWorkspaceChat"
+import { cursorColorFor } from "../lib/cursorColor"
+import { useRemoteCursorStyles, trackLocalActivity } from "../hooks/useRemoteCursorStyles"
 
 function getSocketUrl() {
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
@@ -379,7 +381,6 @@ function WorkspaceEditor({
   const [memberProfiles, setMemberProfiles] = useState([])
   const changeTimer = useRef(null)
   const [socketConnected, setSocketConnected] = useState(false)
-
   const activeFileRef = useRef(activeFile)
   const editorRef = useRef(null)
   const isRemoteApplyingRef = useRef(false)
@@ -1023,7 +1024,7 @@ function WorkspaceEditor({
               readOnly: false,
               minimap: { enabled: false },
               fontSize: 14,
-              padding: { top: 18 },
+              padding: { top: 28 },
               smoothScrolling: true,
               fontFamily: "'IBM Plex Mono', monospace"
             }}
@@ -1066,12 +1067,15 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
   const [memberCount, setMemberCount] = useState(0)
   const [isOwner, setIsOwner] = useState(false)
   const [socketConnected, setSocketConnected] = useState(false)
+  const [awareness, setAwareness] = useState(null)
   const editorRef = useRef(null)
   const bindingRef = useRef(null)
   const providerRef = useRef(null)
   const ydocRef = useRef(null)
   const saveTimersRef = useRef(new Map())
   const activeFileRef = useRef(activeFile)
+
+  useRemoteCursorStyles(awareness, activeFile?.id)
 
   useEffect(() => { activeFileRef.current = activeFile }, [activeFile])
 
@@ -1158,11 +1162,14 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     // Register sync handlers before opening the socket. With autoConnect, a
     // fast local connection can complete its handshake before `onSync` exists.
     const provider = new SocketIOProvider(getSocketUrl(), `workspace-${workspaceId}-file-${file.id}`, ydoc, { autoConnect: false })
+    //eslint-disable-next-line
+    setAwareness(provider.awareness)
     const ytext = ydoc.getText("monaco")
     ydocRef.current = ydoc
     providerRef.current = provider
     provider.on("status", ({ status }) => setSocketConnected(status === "connected"))
     let binding = null
+    let stopActivity = null
     let seedTimeout = null
     const attachBinding = () => {
       if (binding || providerRef.current !== provider) return
@@ -1171,6 +1178,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
       if (!model || model.isDisposed?.()) return
       bindingRef.current?.destroy()
       binding = new MonacoBinding(ytext, model, new Set([editor]), provider.awareness)
+      stopActivity = trackLocalActivity(editor, provider.awareness)
       bindingRef.current = binding
     }
     const seedKey = `workspace-${workspaceId}-file-${file.id}`
@@ -1193,7 +1201,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
       }, 400)
     }
     provider.on("sync", onSync)
-    provider.awareness.setLocalStateField("user", { id: currentUser?.id, name: currentUser?.name || "You", color: "#ff6b4a" })
+    provider.awareness.setLocalStateField("user", { id: currentUser?.id, name: currentUser?.name || "Guest", color: cursorColorFor(currentUser?.id), initials: currentUser?.initials })
     const onChange = (_event, transaction) => {
       const content = ytext.toString()
       // Preview tracks both local typing and remote Yjs edits immediately.
@@ -1209,7 +1217,9 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
       provider.off("sync", onSync)
       window.clearTimeout(seedTimeout)
       // Do not let an old file's delayed cleanup clear a newer binding.
+      stopActivity?.()
       binding?.destroy()
+      setAwareness(null)
       if (bindingRef.current === binding) bindingRef.current = null
       provider.destroy(); ydoc.destroy()
       if (providerRef.current === provider) { providerRef.current = null; ydocRef.current = null }
@@ -1278,7 +1288,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
   return <main className="workspace-page">
     <div className="workspace-header"><div><button className="breadcrumb">Workspaces</button><span> / </span><strong>{workspace}</strong><p className="muted">A shared, conflict-free coding session.</p></div><div className="workspace-actions"><button className="outline-button chat-toggle" onClick={() => { const opening = !chatOpen; setChatOpen(opening); if (opening) chat.markRead() }}>Chat{chat.unread > 0 && <span className="chat-unread-badge">{chat.unread}</span>}</button><span className="presence-more" title={`${memberCount} workspace members`}>{onlineUsers.length}</span><button className="outline-button" onClick={onSettings}>⚙</button><button className="primary-button small-button" onClick={persistNow}>{saved ? "Saved" : "Save changes"}</button></div></div>
     <div className="editor-toolbar"><div className="file-tabs">{visibleFiles.map((file) => <button key={file.id || file.name} className={activeFile?.id === file.id ? "selected" : ""} onClick={() => selectFile(file)}><span className="file-icon">{file.icon || "<>"}</span>{file.name}{isOwner && <span className="close-file" role="button" aria-label={`Delete ${file.name}`} onClick={(event) => { event.stopPropagation(); removeFile(file) }}>×</span>}</button>)}{isOwner && <button className="new-file" aria-label="Create file" onClick={addFile}>+</button>}</div><div className="editor-controls"><span className="live-label"><span className="status-dot" style={{ backgroundColor: socketConnected ? "#5bc38b" : "#eab308" }} />{socketConnected ? "Live synced" : "Connecting…"}</span><button className="preview-toggle" onClick={() => setPreviewOpen(!previewOpen)}>{previewOpen ? "Hide preview" : "Show preview"}</button></div></div>
-    <div className={`editor-layout ${previewOpen ? "with-preview" : "full-editor"}`}><div className="editor-pane"><div className="editor-title">{activeFile?.name}<span className="editor-title-status">{saved ? "Saved" : "Unsaved changes"}</span></div><Editor key={activeFile?.id || activeFile?.name} height="100%" language={activeFile?.language} defaultValue="" theme="vs-dark" onMount={(editor, monaco) => { editorRef.current = editor; bindEditor(editor); configureEditorCompletions(monaco); editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, persistNow) }} onChange={(value) => { const current = activeFileRef.current; if (!current?.id) return; const content = value || ""; setWorkspaceFiles((items) => items.map((item) => item.id === current.id ? { ...item, content } : item)); setSaved(false); scheduleSave(current, content) }} options={{ minimap: { enabled: false },fontSize: 14, padding: { top: 18 }, smoothScrolling: true, quickSuggestions: { other: true, comments: false, strings: true }, suggestOnTriggerCharacters: true, tabCompletion: "on" }} /></div>{previewOpen && <LivePreview files={visibleFiles} />}</div>
+    <div className={`editor-layout ${previewOpen ? "with-preview" : "full-editor"}`}><div className="editor-pane"><div className="editor-title">{activeFile?.name}<span className="editor-title-status">{saved ? "Saved" : "Unsaved changes"}</span></div><Editor key={activeFile?.id || activeFile?.name} height="100%" language={activeFile?.language} defaultValue="" theme="vs-dark" onMount={(editor, monaco) => { editorRef.current = editor; bindEditor(editor); configureEditorCompletions(monaco); editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, persistNow) }} onChange={(value) => { const current = activeFileRef.current; if (!current?.id) return; const content = value || ""; setWorkspaceFiles((items) => items.map((item) => item.id === current.id ? { ...item, content } : item)); setSaved(false); scheduleSave(current, content) }} options={{ minimap: { enabled: false },fontSize: 14, padding: { top: 28 }, smoothScrolling: true, quickSuggestions: { other: true, comments: false, strings: true }, suggestOnTriggerCharacters: true, tabCompletion: "on" }} /></div>{previewOpen && <LivePreview files={visibleFiles} />}</div>
     <div className="workspace-footer"><span>Edits sync live with Yjs CRDT</span><span>{onlineUsers.length} active now · {memberCount} total members</span></div>
     <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} currentUser={currentUser} isOwner={isOwner} chat={chat} />
   </main>
