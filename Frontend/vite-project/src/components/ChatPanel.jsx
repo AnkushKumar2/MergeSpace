@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { cursorColorFor } from "../lib/cursorColor"
 import "./ChatPanel.css"
 
 const initialsFor = (name) => (name || "?").trim().split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("").toUpperCase() || "?"
@@ -135,9 +136,9 @@ export default function ChatPanel({ open, onClose, currentUser, chat, isOwner = 
             return <div key={message.id}>
               {showDay && <div className="chat-day-separator"><span>{dayLabel(message.created_at)}</span></div>}
               <article className={`chat-message${own ? " is-own" : ""}${message.pending ? " is-pending" : ""}${grouped ? " is-grouped" : ""}`}>
-                {!grouped ? <MessageAvatar message={message} /> : <span className="chat-avatar-spacer" />}
+                {!own && (!grouped ? <MessageAvatar message={{ ...message, name: chat?.nameFor?.(message.user_id) || "Member" }} /> : <span className="chat-avatar-spacer" />)}
                 <div className="chat-message-content">
-                  {!grouped && <div className="chat-message-meta"><strong>{message.name || "Unknown"}</strong><time dateTime={message.created_at}>{timeLabel(message.created_at)}</time></div>}
+                  {!grouped && <div className="chat-message-meta">{own ? <strong>You</strong> : <strong style={{ color: cursorColorFor(message.user_id) }}>{chat?.nameFor?.(message.user_id) || "Member"}</strong>}<time dateTime={message.created_at}>{timeLabel(message.created_at)}</time></div>}
                   {editingId === message.id ? <form className="chat-edit-form" onSubmit={(event) => saveEdit(event, message.id)}><textarea autoFocus maxLength={2000} value={editDraft} onChange={(event) => setEditDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setEditingId(null) } else if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); saveEdit(event, message.id) } }} /><div><button type="button" onClick={() => setEditingId(null)}>Cancel</button><button type="submit" disabled={!editDraft.trim()}>Save</button></div></form> : <div className="chat-message-body"><RichMessage text={message.body} />{message.edited_at && <span className="chat-edited"> (edited)</span>}</div>}
                   {(own || isOwner) && !message.pending && <div className="chat-message-actions">{own && <button type="button" onClick={() => { setEditingId(message.id); setEditDraft(message.body || "") }}>Edit</button>}<button type="button" onClick={() => { const other = !own; if (window.confirm(other ? "Delete someone else's message? This cannot be undone." : "Delete your message? This cannot be undone.")) chat.remove?.(message.id) }}>Delete</button></div>}
                   {message.failed && <div className="chat-failure"><span>Message failed to send</span><button type="button" onClick={() => chat.retry?.(message.id)}>Retry</button></div>}

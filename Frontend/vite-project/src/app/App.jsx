@@ -3,7 +3,7 @@ import "./landing-extended.css"
 import "./readability.css"
 import { Editor } from "@monaco-editor/react"
 import { Component, useCallback, useEffect, useRef, useState } from "react"
-import { acceptInvitation, createFile, createWorkspace, declineInvitation, deleteFile, deleteWorkspace, getCurrentUser, insforgeConfigured, inviteMember, listFiles, listInvitations, listMembers, listMyInvitations, listWorkspaces, publishFileCreated, publishFileDeleted, requestEmailCode, removeMember, saveFile, signIn, signInWithProvider, signOut, signUp, subscribeToWorkspace, updateMemberRole, updateProfile, updateWorkspace, verifyEmailCode } from "../lib/insforge"
+import { acceptInvitation, createFile, createWorkspace, declineInvitation, deleteFile, deleteWorkspace, ensureProfileExists, getCurrentUser, insforgeConfigured, inviteMember, listFiles, listInvitations, listMembers, listMyInvitations, listWorkspaces, publishFileCreated, publishFileDeleted, requestEmailCode, removeMember, saveFile, signIn, signInWithProvider, signOut, signUp, subscribeToWorkspace, updateMemberRole, updateProfile, updateWorkspace, verifyEmailCode } from "../lib/insforge"
 import * as Y from "yjs"
 import { SocketIOProvider } from "y-socket.io"
 import { MonacoBinding } from "y-monaco"
@@ -92,6 +92,7 @@ function pageFromLocation() {
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
+  const profileChecks = useRef(new Set())
   const [page, setPage] = useState(pageFromLocation)
   const [workspaces, setWorkspaces] = useState([])
   const [workspace, setWorkspace] = useState("")
@@ -112,6 +113,12 @@ function App() {
     const resolvedUsers = typeof nextUsers === "function" ? nextUsers(currentUsers) : nextUsers
     return (resolvedUsers || []).map((cursor) => cursor || {})
   }), [])
+
+  useEffect(() => {
+    if (!currentUser?.id || profileChecks.current.has(currentUser.id)) return
+    profileChecks.current.add(currentUser.id)
+    ensureProfileExists({ id: currentUser.id, name: currentUser.name, email: currentUser.email }).catch(() => {})
+  }, [currentUser?.id, currentUser?.name, currentUser?.email])
 
   useEffect(() => {
     if (!insforgeConfigured) return undefined
@@ -1053,7 +1060,8 @@ function WorkspaceEditor({
 
 function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setActiveFile, previewOpen, setPreviewOpen, saved, setSaved, bindEditor, onlineUsers, setOnlineUsers, onSettings }) {
   const [chatOpen, setChatOpen] = useState(false)
-  const chat = useWorkspaceChat({ workspaceId, currentUser, isOpen: chatOpen })
+  const [members, setMembers] = useState([])
+  const chat = useWorkspaceChat({ workspaceId, currentUser, isOpen: chatOpen, members })
   const [workspaceFiles, setWorkspaceFiles] = useState([])
   const [memberCount, setMemberCount] = useState(0)
   const [isOwner, setIsOwner] = useState(false)
@@ -1071,6 +1079,7 @@ function WorkspaceEditor({ workspace, workspaceId, currentUser, activeFile, setA
     if (!workspaceId) return
     listMembers(workspaceId).then((members) => {
       setMemberCount(members.length)
+      setMembers(members.map((member) => ({ id: member.user_id, name: member.profile?.name || member.profile?.email })))
       setIsOwner(members.some((member) => member.user_id === currentUser?.id && member.role === "owner"))
     }).catch(() => undefined)
   }, [workspaceId, currentUser?.id])
