@@ -1,6 +1,8 @@
 import "./landing-motion.css"
 import { useEffect, useRef, useState } from "react"
 import CountUp from "./CountUp"
+import { reopenCookieSettings } from "../site/consent"
+import { usePageMeta } from "../site/usePageMeta"
 import { cardMotionProps, magneticProps, useLandingMotion } from "./useLandingMotion"
 
 /* Splits a heading into words that rise out of a mask, one after another. */
@@ -70,11 +72,21 @@ function Faq({ question, answer, defaultOpen = false, index }) {
 
 export default function AnimatedLanding({ onEnter, onLogin, configured }) {
   const rootRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   useLandingMotion(rootRef)
-  const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })
+  usePageMeta("landing")
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    const onKey = (event) => { if (event.key === "Escape") setMenuOpen(false) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [menuOpen])
+  const jump = (id) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }) }
   return <main ref={rootRef} className="landing extended-landing motion-landing">
     <div className="landing-progress" aria-hidden="true"><span /></div>
-    <nav className="landing-nav"><button className="brand light" onClick={() => jump("top")}><span className="brand-mark">M</span>MergeSpace</button><div className="landing-links"><button className="text-button" onClick={() => jump("features")}>Features</button><button className="text-button" onClick={() => jump("how-it-works")}>How it works</button><button className="text-button" onClick={onLogin}>Log in</button><button className="nav-cta" onClick={onEnter}>Start building ↗</button></div></nav>
+    <nav className="landing-nav"><button className="brand light" onClick={() => jump("top")}><span className="brand-mark">M</span>MergeSpace</button><div className="landing-links"><button className="text-button" onClick={() => jump("features")}>Features</button><button className="text-button" onClick={() => jump("how-it-works")}>How it works</button><button className="text-button" onClick={onLogin}>Log in</button><button className="nav-cta" onClick={onEnter}>Start building ↗</button></div><button type="button" className="menu-toggle" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="landing-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}><span /><span /><span /></button>
+      <div id="landing-mobile-menu" className={`mobile-menu${menuOpen ? " is-open" : ""}`} hidden={!menuOpen}><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button><button onClick={() => { setMenuOpen(false); onLogin() }}>Log in</button><button className="mobile-menu-cta" onClick={() => { setMenuOpen(false); onEnter() }}>Start building ↗</button></div>
+    </nav>
 
     <section className="landing-content" id="top">
       <div className="landing-copy">
@@ -154,6 +166,6 @@ export default function AnimatedLanding({ onEnter, onLogin, configured }) {
       <button className="primary-button magnetic" data-reveal="up" style={{ "--d": "350ms" }} onClick={onEnter} {...magneticProps}>Start building free ↗</button>
     </section>
 
-    <footer className="landing-footer"><div><button className="brand light"><span className="brand-mark">M</span>MergeSpace</button><p>The shared workspace for pair programming, reviews, interviews, and teams that build together.</p></div><div><strong>Product</strong><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button></div><div><strong>Company</strong><a href="mailto:ankushgupta97412@gmail.com">Contact</a><a href="mailto:ankushgupta97412@gmail.com">Support</a></div><small>© {new Date().getFullYear()} MergeSpace. All rights reserved.</small></footer>
+    <footer className="landing-footer"><div><button className="brand light"><span className="brand-mark">M</span>MergeSpace</button><p>The shared workspace for pair programming, reviews, interviews, and teams that build together.</p></div><div><strong>Product</strong><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button></div><div><strong>Company</strong><a href="mailto:ankushgupta97412@gmail.com">Contact</a><a href="mailto:ankushgupta97412@gmail.com">Support</a></div><div><strong>Legal</strong><a href="/privacy">Privacy Policy</a><a href="/terms">Terms &amp; Conditions</a><button onClick={reopenCookieSettings}>Cookie settings</button></div><small>© {new Date().getFullYear()} MergeSpace. All rights reserved.</small></footer>
   </main>
 }

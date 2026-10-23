@@ -1,0 +1,79 @@
+/* MergeSpace site pages, cookie banner, toasts, empty state and the mobile menu.
+   Imported AFTER App.css so the mobile-menu rules can override the collapsed sidebar. */
+
+/* ---------- legal + 404 pages (dark, matches the landing page) ---------- */
+.site-page{min-height:100vh;display:flex;flex-direction:column;padding:0 max(5.5%,20px);color:#edf0ea;background:radial-gradient(900px 600px at 85% 0,#304038 0,transparent 66%),linear-gradient(145deg,#202724,#18201d)}
+.site-header{display:flex;justify-content:space-between;align-items:center;padding:26px 0}
+.site-brand{display:inline-flex;align-items:center;gap:10px;color:#f8f7f1;font:700 18px Syne;letter-spacing:-.5px;text-decoration:none}
+.site-link{color:#aeb8af;font-size:13px;text-decoration:none;transition:color .2s ease}.site-link:hover{color:#ffab96}
+.legal{width:100%;max-width:760px;margin:30px auto 80px}
+.site-kicker{color:#9eaea3;font-size:10px;font-weight:700;letter-spacing:1.5px}
+.legal h1{margin:12px 0 8px;font:700 clamp(34px,5vw,56px)/1.05 Syne;letter-spacing:-2px;color:#f0f2eb}
+.legal-updated{margin:0 0 36px;color:#8e9790;font-size:13px}
+.legal h2{margin:38px 0 10px;font:700 20px Syne;letter-spacing:-.4px;color:#f0f2eb}
+.legal p,.legal li{color:#b5beb6;font-size:15px;line-height:1.75}
+.legal ul{padding-left:20px}.legal li{margin-bottom:8px}.legal strong{color:#edf0ea}
+.legal a{color:#ffab96;text-underline-offset:3px}.legal a:hover{color:#fff}
+.site-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:24px 0 30px;border-top:1px solid #c7d3c018;color:#7f8982;font-size:12px}
+.site-footer nav{display:flex;gap:20px;flex-wrap:wrap}
+.site-footer a,.site-footer button{background:none;color:#aeb8af;font-size:12px;text-decoration:none;transition:color .2s ease}.site-footer a:hover,.site-footer button:hover{color:#ffab96}
+.site-center{align-items:center;justify-content:center;text-align:center;gap:6px;padding-top:40px;padding-bottom:40px}
+.site-center .site-brand{position:absolute;top:26px;left:max(5.5%,20px)}
+.site-code{margin:0;font:700 clamp(96px,22vw,200px)/1 Syne;letter-spacing:-8px;color:#df745a;opacity:.9}
+.site-center h1{margin:0;font:700 clamp(28px,4vw,44px)/1.1 Syne;letter-spacing:-1.5px;color:#f0f2eb}
+.site-lede{max-width:440px;margin:12px 0 26px;color:#aeb8af;line-height:1.7}
+.site-button{display:inline-flex;padding:13px 20px;border-radius:5px;background:#efede5;color:#262a28;font-size:13px;font-weight:700;text-decoration:none;transition:transform .25s ease,box-shadow .25s ease}.site-button:hover{transform:translateY(-3px);box-shadow:0 12px 28px #00000044}
+
+/* ---------- cookie banner ---------- */
+.cookie-banner{position:fixed;z-index:200;left:16px;right:16px;bottom:16px;max-width:760px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:18px 20px;border:1px solid #c7d3c02e;border-radius:12px;background:#1c2320f5;backdrop-filter:blur(12px);color:#edf0ea;box-shadow:0 20px 50px #0000005c;animation:cookie-in .5s cubic-bezier(.16,1,.3,1) both}
+.cookie-banner strong{display:block;margin-bottom:4px;font:700 14px Syne}
+.cookie-banner p{margin:0;color:#aeb8af;font-size:12.5px;line-height:1.6}
+.cookie-banner a{color:#ffab96}
+.cookie-actions{display:flex;flex-shrink:0;gap:10px}
+.cookie-actions button{padding:10px 14px;border-radius:5px;font-size:12px;font-weight:700;transition:transform .2s ease,background .2s ease}
+.cookie-actions button:hover{transform:translateY(-2px)}
+.cookie-primary{background:#efede5;color:#262a28}
+.cookie-secondary{background:transparent;color:#edf0ea;box-shadow:inset 0 0 0 1px #c7d3c04d}
+@keyframes cookie-in{from{opacity:0;transform:translateY(20px)}}
+@media (max-width:620px){.cookie-banner{flex-direction:column;align-items:stretch;gap:14px}.cookie-actions button{flex:1}}
+
+/* ---------- success / error toasts ---------- */
+.toast-region{position:fixed;z-index:300;left:50%;bottom:24px;translate:-50% 0;display:grid;gap:10px;width:min(440px,calc(100vw - 32px));pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:10px;background:#202225;color:#fff;font-size:13px;line-height:1.45;box-shadow:0 14px 36px #00000047;animation:toast-in .4s cubic-bezier(.16,1,.3,1) both}
+.toast-icon{display:grid;place-items:center;flex-shrink:0;width:22px;height:22px;border-radius:50%;font-size:12px;font-weight:700}
+.toast-success .toast-icon{background:#5bc38b;color:#10301f}
+.toast-error .toast-icon{background:#ff765f;color:#3a0f06}
+.toast-info .toast-icon{background:#c9dbf5;color:#1b2b45}
+.toast-text{flex:1}
+.toast-close{background:none;color:#aab0ac;font-size:18px;line-height:1;padding:0 2px}.toast-close:hover{color:#fff}
+@keyframes toast-in{from{opacity:0;transform:translateY(14px) scale(.98)}}
+
+/* ---------- empty state (uses the app's light palette) ---------- */
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:10px;padding:56px 24px;border:1.5px dashed var(--line,#deded8);border-radius:14px;background:#ffffff80;text-align:center}
+.empty-state-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:16px;background:var(--mint,#c5e8d9);color:#226b55;font-size:24px}
+.empty-state h3{margin:6px 0 0;font:700 20px Syne}
+.empty-state p{max-width:360px;margin:0 0 10px;color:var(--muted,#7d817f);font-size:14px;line-height:1.6}
+
+/* ---------- bot trap: hidden from people, visible to naive bots ---------- */
+.hp-field{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+
+/* ---------- mobile menu for the signed-in app ---------- */
+.nav-toggle{display:none;align-items:center;justify-content:center;width:40px;height:40px;margin-right:6px;border-radius:8px;background:none;color:var(--ink,#202225);font-size:22px}
+.sidebar-backdrop{display:none}
+@media (max-width:680px){
+  .nav-toggle{display:inline-flex}
+  .app-shell .topbar{justify-content:flex-start;gap:4px}.app-shell .topbar-actions{margin-left:auto}
+  .app-shell .sidebar{position:fixed;z-index:60;top:68px;bottom:0;left:0;width:min(290px,84vw);padding:22px 16px 18px;overflow-y:auto;background:#fff;border-right:1px solid var(--line,#deded8);box-shadow:12px 0 40px #00000026;transform:translateX(-105%);transition:transform .32s cubic-bezier(.16,1,.3,1);visibility:hidden}
+  .app-shell .sidebar.is-open{transform:none;visibility:visible}
+  .sidebar-backdrop{display:block;position:fixed;z-index:55;inset:68px 0 0;background:#14181666;opacity:0;pointer-events:none;transition:opacity .3s ease}
+  .sidebar-backdrop.is-open{opacity:1;pointer-events:auto}
+  .app-shell .sidebar .workspace-switcher{padding:8px}
+  .app-shell .sidebar .workspace-switcher>span:not(.workspace-icon){display:grid}
+  .app-shell .sidebar .main-nav button em{display:inline-block}
+  .app-shell .sidebar .workspace-switcher .chevron{display:inline}
+  .app-shell .sidebar .sidebar-bottom>button,.app-shell .sidebar .sidebar-help{display:flex}
+  .app-shell .sidebar .main-nav button{justify-content:flex-start;padding:12px;font-size:14px}
+  .app-shell .sidebar .main-nav button span{font-size:16px}
+  .app-shell .app-body{display:block}
+}
+@media (prefers-reduced-motion:reduce){.cookie-banner,.toast{animation:none}.app-shell .sidebar{transition:none}}
