@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /*?view=
+
+Sitemap: https://mergespace.insforge.site/sitemap.xml

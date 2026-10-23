@@ -13,6 +13,10 @@ import { useWorkspaceChat } from "../hooks/useWorkspaceChat"
 import { cursorColorFor } from "../lib/cursorColor"
 import { useRemoteCursorStyles, trackLocalActivity } from "../hooks/useRemoteCursorStyles"
 import AnimatedLanding from "../landing/AnimatedLanding"
+import EmptyState from "../site/EmptyState"
+import { useSpamGuard } from "../site/useSpamGuard"
+import { usePageMeta } from "../site/usePageMeta"
+import { useToast } from "../site/toastContext"
 
 function getSocketUrl() {
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
@@ -104,7 +108,10 @@ function App() {
   const [loading, setLoading] = useState(insforgeConfigured)
   const [activeFile, setActiveFile] = useState(files[0])
   const [previewOpen, setPreviewOpen] = useState(false)
+  usePageMeta(page, page === "workspace" ? workspace : undefined)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const toast = useToast()
   const [saved, setSaved] = useState(true)
   const editorRef = useRef(null)
   const [onlineUsers, setOnlineUsersState] = useState([])
@@ -209,6 +216,7 @@ function App() {
     await signOut()
     setCurrentUser(null)
     returnHome()
+    toast.info("You have been signed out")
   }
 
   const handleCreateWorkspace = async () => {
@@ -227,14 +235,17 @@ function App() {
       setActiveFile(files[0])
       setPreviewOpen(false)
       enterApp("workspace")
+      toast.success("Workspace created")
     } catch (error) {
       setAppError(`Could not create workspace: ${error.message}`)
+      toast.error(`Could not create workspace: ${error.message}`)
     }
   }
 
   const handleInvite = async ({ email, role }) => {
     await inviteMember({ workspaceId: workspaceId || workspaces.find((item) => item.name === workspace)?.id, email, role, invitedBy: currentUser.id })
     setPage("settings")
+    toast.success(`Invitation sent to ${email}`)
   }
 
   const handleWorkspaceUpdated = (updated) => {
@@ -250,18 +261,20 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
+        <button type="button" className="nav-toggle" aria-label={navOpen ? "Close menu" : "Open menu"} aria-expanded={navOpen} onClick={() => setNavOpen((open) => !open)}>☰</button>
         <button className="brand" onClick={() => enterApp("dashboard")}><span className="brand-mark">M</span>MergeSpace</button>
         <div className="topbar-actions"><span className="sync-status"><span className="status-dot" /> All changes saved</span><button className="icon-button" aria-label="Notifications">◌</button><button className="user-chip" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-haspopup="menu"><span className={`avatar ${currentUser?.color}`}>{currentUser?.initials}</span><span className="user-name">{currentUser?.name}</span><span className={`chevron ${menuOpen ? "down" : "right"}`} aria-hidden="true">{menuOpen ? "⌄" : "›"}</span></button>{menuOpen && <div className="profile-menu" role="menu"><button onClick={() => { setMenuOpen(false); enterApp("profile") }}>My profile</button><button onClick={() => { setMenuOpen(false); handleSignOut() }}>Sign out</button></div>}</div>
       </header>
       <div className="app-body">
-        <aside className="sidebar"><div className="sidebar-product"><span className="brand-mark">M</span> MergeSpace</div><div className="workspace-switcher"><span className="workspace-icon">{initials(workspace) || "MS"}</span><span><small>WORKSPACE</small><strong>{workspace || "No workspace yet"}</strong></span><span className="chevron">&gt;</span></div><nav className="main-nav"><button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><span>▦</span> Overview</button><button className={page === "workspace" ? "active" : ""} onClick={() => setPage("workspace")}><span>⌁</span> Editor</button><button className={page === "activity" ? "active" : ""} onClick={() => setPage("activity")}><span>◷</span> Activity <em>4</em></button></nav><div className="sidebar-bottom"><button onClick={() => setPage("settings")}><span>⚙</span> Workspace settings</button><button onClick={() => setPage("profile")}><span>◎</span> My profile</button><div className="sidebar-help"><span className="help-avatar" role="img" aria-label="Customer support">👩🏽‍💻</span><span><strong>Need a hand?</strong><small>Visit our help center</small></span></div></div></aside>
-        {page === "dashboard" && <Dashboard user={currentUser} error={appError} workspaces={workspaces} onOpen={(id) => { const selected = workspaces.find((item) => item.id === id); if (!selected) return; setWorkspace(selected.name); setWorkspaceId(selected.id); setPreviewOpen(false); enterApp("workspace") }} onNew={handleCreateWorkspace} onDelete={async (id) => { await deleteWorkspace(id); const next = workspaces.filter((item) => item.id !== id); setWorkspaces(next); setWorkspace(next[0]?.name || ""); setWorkspaceId(next[0]?.id || "") }} />}
+        <div className={`sidebar-backdrop${navOpen ? " is-open" : ""}`} onClick={() => setNavOpen(false)} />
+        <aside className={`sidebar${navOpen ? " is-open" : ""}`} onClick={() => setNavOpen(false)}><div className="sidebar-product"><span className="brand-mark">M</span> MergeSpace</div><div className="workspace-switcher"><span className="workspace-icon">{initials(workspace) || "MS"}</span><span><small>WORKSPACE</small><strong>{workspace || "No workspace yet"}</strong></span><span className="chevron">&gt;</span></div><nav className="main-nav"><button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><span>▦</span> Overview</button><button className={page === "workspace" ? "active" : ""} onClick={() => setPage("workspace")}><span>⌁</span> Editor</button><button className={page === "activity" ? "active" : ""} onClick={() => setPage("activity")}><span>◷</span> Activity <em>4</em></button></nav><div className="sidebar-bottom"><button onClick={() => setPage("settings")}><span>⚙</span> Workspace settings</button><button onClick={() => setPage("profile")}><span>◎</span> My profile</button><div className="sidebar-help"><span className="help-avatar" role="img" aria-label="Customer support">👩🏽‍💻</span><span><strong>Need a hand?</strong><small>Visit our help center</small></span></div></div></aside>
+        {page === "dashboard" && <Dashboard user={currentUser} error={appError} workspaces={workspaces} onOpen={(id) => { const selected = workspaces.find((item) => item.id === id); if (!selected) return; setWorkspace(selected.name); setWorkspaceId(selected.id); setPreviewOpen(false); enterApp("workspace") }} onNew={handleCreateWorkspace} onDelete={async (id) => { try { await deleteWorkspace(id); const next = workspaces.filter((item) => item.id !== id); setWorkspaces(next); setWorkspace(next[0]?.name || ""); setWorkspaceId(next[0]?.id || ""); toast.success("Workspace deleted") } catch (error) { toast.error(`Could not delete workspace: ${error.message}`) } }} />}
         {page === "activity" && <ActivityPage user={currentUser} workspaces={workspaces} onOpen={() => enterApp("workspace")} onJoined={async () => { const nextWorkspaces = await listWorkspaces(); setWorkspaces(nextWorkspaces); const joined = nextWorkspaces.find((item) => item.id === workspaceId) || nextWorkspaces[0]; setWorkspace(joined?.name || ""); setWorkspaceId(joined?.id || "") }} />}
         {page === "workspace" && workspaceId && <WorkspaceErrorBoundary workspaceId={workspaceId} onBack={() => enterApp("dashboard")}><Workspace workspace={workspace} workspaceId={workspaceId} currentUser={currentUser} activeFile={activeFile} setActiveFile={setActiveFile} previewOpen={previewOpen} setPreviewOpen={setPreviewOpen} saved={saved} setSaved={setSaved} bindEditor={bindEditor} onlineUsers={onlineUsers} setOnlineUsers={setOnlineUsers} onSettings={() => setPage("settings")} /></WorkspaceErrorBoundary>}
         {page === "workspace" && !workspaceId && <main className="content"><p className="auth-error">This workspace could not be loaded. Return to Overview and try again.</p><button className="primary-button" onClick={() => enterApp("dashboard")}>Back to overview</button></main>}
         {page === "settings" && <Settings workspace={workspace} workspaceId={workspaceId} setWorkspace={setWorkspace} user={currentUser} onBack={() => setPage("dashboard")} onInvite={() => setPage("invite")} onUpdated={handleWorkspaceUpdated} />}
         {page === "invite" && <InviteUser workspace={workspace} onBack={() => setPage("settings")} onInvite={handleInvite} />}
-        {page === "profile" && <Profile user={currentUser} onSave={async (profile) => { const savedProfile = await updateProfile({ ...profile, id: currentUser.id }); const name = savedProfile?.name || profile.name || currentUser.name; const nextUser = { ...currentUser, profile: { ...(currentUser.profile || {}), ...savedProfile, name }, name, color: makeColor(name), initials: initials(name) }; setCurrentUser(nextUser) }} onBack={() => setPage("dashboard")} />}
+        {page === "profile" && <Profile user={currentUser} onSave={async (profile) => { const savedProfile = await updateProfile({ ...profile, id: currentUser.id }); const name = savedProfile?.name || profile.name || currentUser.name; const nextUser = { ...currentUser, profile: { ...(currentUser.profile || {}), ...savedProfile, name }, name, color: makeColor(name), initials: initials(name) }; setCurrentUser(nextUser); toast.success("Profile saved") }} onBack={() => setPage("dashboard")} />}
       </div>
     </div>
   )
@@ -308,12 +321,15 @@ function Auth({ mode, onBack, onSubmit, onProvider, onEmailCode, error, configur
   const [password, setPassword] = useState("")
   const [useCode, setUseCode] = useState(false)
   const [codeSent, setCodeSent] = useState(false)
+  const spam = useSpamGuard()
+  const toast = useToast()
   const submit = (event) => {
     event.preventDefault()
+    if (spam.isBot()) { toast.info("Please try again in a moment."); return }
     onSubmit({ name: name.trim() || email.split("@")[0], email: email.trim(), password }, mode)
   }
-  const handleCodeSubmit = async (event) => { event.preventDefault(); const result = await onEmailCode(email.trim(), codeSent ? event.currentTarget.code.value.trim() : ""); if (result?.sent) setCodeSent(true) }
-  return <main className="auth-page"><div className="auth-art"><button className="brand light" onClick={onBack}><span className="brand-mark">M</span>MergeSpace</button><div className="auth-art-copy"><span className="quote-mark">“</span><h2>Great work happens<br />in the <i>in-between.</i></h2><p>Capture the spark. Keep the momentum.</p></div><div className="auth-art-lines"><span /> <span /> <span /></div></div><section className="auth-panel"><button className="back-button" onClick={onBack}>← Back home</button><form className="auth-form" onSubmit={useCode ? handleCodeSubmit : submit}><p className="kicker">{mode === "signup" ? "GET STARTED" : "WELCOME BACK"}</p><h1>{mode === "signup" ? "Create your space." : "Good to see you."}</h1><p className="auth-subtitle">{mode === "signup" ? "Bring your best people together." : "Pick up right where you left off."}</p>{error && <p className="auth-error">{error}</p>}<div className="oauth-row"><button type="button" onClick={() => onProvider("google")} disabled={!configured}><b>G</b> Google</button><button type="button" onClick={() => onProvider("github")} disabled={!configured}><b>◆</b> GitHub</button></div><div className="or"><span />or continue with email<span /></div>{mode === "signup" && !useCode && <label>Your name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Ada Lovelace" /></label>}<label>Email address<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" /></label>{useCode ? codeSent && <label>Verification code<input required name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="Enter the code from your email" /></label> : <label>Password<input required minLength="8" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8+ characters" /></label>}<button className="primary-button wide" type="submit" disabled={!configured}>{useCode ? (codeSent ? "Verify code" : "Send email code") : mode === "signup" ? "Create account" : "Log in"} <span>↗</span></button><button type="button" className="code-toggle" onClick={() => { setUseCode(!useCode); setCodeSent(false) }}>{useCode ? "Use password instead" : "Use a one-time email code"}</button><p className="switch-auth">Your profile is stored in InsForge PostgreSQL and restored on your next visit.</p></form></section></main>
+  const handleCodeSubmit = async (event) => { event.preventDefault(); if (spam.isBot()) { toast.info("Please try again in a moment."); return } const result = await onEmailCode(email.trim(), codeSent ? event.currentTarget.code.value.trim() : ""); if (result?.sent) setCodeSent(true) }
+  return <main className="auth-page"><div className="auth-art"><button className="brand light" onClick={onBack}><span className="brand-mark">M</span>MergeSpace</button><div className="auth-art-copy"><span className="quote-mark">“</span><h2>Great work happens<br />in the <i>in-between.</i></h2><p>Capture the spark. Keep the momentum.</p></div><div className="auth-art-lines"><span /> <span /> <span /></div></div><section className="auth-panel"><button className="back-button" onClick={onBack}>← Back home</button><form className="auth-form" onSubmit={useCode ? handleCodeSubmit : submit}><input {...spam.trapProps} /><p className="kicker">{mode === "signup" ? "GET STARTED" : "WELCOME BACK"}</p><h1>{mode === "signup" ? "Create your space." : "Good to see you."}</h1><p className="auth-subtitle">{mode === "signup" ? "Bring your best people together." : "Pick up right where you left off."}</p>{error && <p className="auth-error">{error}</p>}<div className="oauth-row"><button type="button" onClick={() => onProvider("google")} disabled={!configured}><b>G</b> Google</button><button type="button" onClick={() => onProvider("github")} disabled={!configured}><b>◆</b> GitHub</button></div><div className="or"><span />or continue with email<span /></div>{mode === "signup" && !useCode && <label>Your name<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Ada Lovelace" /></label>}<label>Email address<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" /></label>{useCode ? codeSent && <label>Verification code<input required name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="Enter the code from your email" /></label> : <label>Password<input required minLength="8" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="8+ characters" /></label>}<button className="primary-button wide" type="submit" disabled={!configured}>{useCode ? (codeSent ? "Verify code" : "Send email code") : mode === "signup" ? "Create account" : "Log in"} <span>↗</span></button><button type="button" className="code-toggle" onClick={() => { setUseCode(!useCode); setCodeSent(false) }}>{useCode ? "Use password instead" : "Use a one-time email code"}</button><p className="switch-auth">Your profile is stored in InsForge PostgreSQL and restored on your next visit.</p></form></section></main>
 }
 
 function Greeting({ name }) {
@@ -328,7 +344,7 @@ function Greeting({ name }) {
 }
 
 function Dashboard({ user, error, workspaces, onOpen, onNew, onDelete }) {
-  return <main className="content dashboard"><div className="page-heading"><div><p className="kicker">YOUR MERGESPACE</p><h1><Greeting name={user?.name} /></h1><p className="muted">Here's what's happening across your spaces.</p></div><button className="primary-button" onClick={onNew}>+ New workspace</button></div>{error && <p className="auth-error dashboard-error">{error}</p>}<section className="dashboard-grid"><div className="section-block"><div className="section-heading"><h2>Your workspaces</h2><button className="quiet-button">{workspaces.length} total</button></div><div className="workspace-grid">{workspaces.map((item) => <WorkspaceCard key={item.id || item.name} {...item} updated="Ready to build" onOpen={() => onOpen(item.id)} onDelete={() => onDelete(item.id)} />)}</div></div><div className="activity-panel"><div className="section-heading"><h2>Your account</h2></div><Activity name={user?.name} action="owns" file={`${workspaces.length} workspace${workspaces.length === 1 ? "" : "s"}`} time={user?.email} color={user?.color} /><Activity name={user?.name} action="is ready to edit" file="index.html" time="Just now" color={user?.color} /></div></section><div className="dashboard-tip"><span>✦</span><div><strong>Make space for the good stuff.</strong><p>Invite your team and start building something worth sharing.</p></div><button onClick={() => workspaces[0] && onOpen(workspaces[0].id)} disabled={!workspaces.length}>Open your workspace ↗</button></div></main>
+  return <main className="content dashboard"><div className="page-heading"><div><p className="kicker">YOUR MERGESPACE</p><h1><Greeting name={user?.name} /></h1><p className="muted">Here's what's happening across your spaces.</p></div><button className="primary-button" onClick={onNew}>+ New workspace</button></div>{error && <p className="auth-error dashboard-error">{error}</p>}<section className="dashboard-grid"><div className="section-block"><div className="section-heading"><h2>Your workspaces</h2><button className="quiet-button">{workspaces.length} total</button></div>{workspaces.length === 0 ? <EmptyState icon="+" title="No workspaces yet" text="Create your first workspace to start coding with your team in real time." actionLabel="Create a workspace" onAction={onNew} /> : <div className="workspace-grid">{workspaces.map((item) => <WorkspaceCard key={item.id || item.name} {...item} updated="Ready to build" onOpen={() => onOpen(item.id)} onDelete={() => onDelete(item.id)} />)}</div>}</div><div className="activity-panel"><div className="section-heading"><h2>Your account</h2></div><Activity name={user?.name} action="owns" file={`${workspaces.length} workspace${workspaces.length === 1 ? "" : "s"}`} time={user?.email} color={user?.color} /><Activity name={user?.name} action="is ready to edit" file="index.html" time="Just now" color={user?.color} /></div></section><div className="dashboard-tip"><span>✦</span><div><strong>Make space for the good stuff.</strong><p>Invite your team and start building something worth sharing.</p></div><button onClick={() => workspaces[0] && onOpen(workspaces[0].id)} disabled={!workspaces.length}>Open your workspace ↗</button></div></main>
 }
 
 function ActivityPage({ user, workspaces, onOpen, onJoined }) {
