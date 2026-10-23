@@ -77,6 +77,15 @@ export async function updateProfile(profile) {
   return unwrap(await client.database.from("profiles").insert([{ id, ...changes }]).select().single())
 }
 
+export async function ensureProfileExists({ id, name, email }) {
+  const client = requireClient()
+  if (!id) return
+  const existing = unwrap(await client.database.from("profiles").select("id").eq("id", id).maybeSingle())
+  if (existing) return existing
+  const displayName = name || email?.split("@")[0] || "Member"
+  return unwrap(await client.database.from("profiles").insert([{ id, name: displayName }]).select().single())
+}
+
 export async function listWorkspaces() {
   const client = requireClient()
   return unwrap(await client.database.from("workspaces").select().order("created_at", { ascending: false })) || []
