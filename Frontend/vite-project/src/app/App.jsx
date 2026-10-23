@@ -12,6 +12,7 @@ import ChatPanel from "../components/ChatPanel"
 import { useWorkspaceChat } from "../hooks/useWorkspaceChat"
 import { cursorColorFor } from "../lib/cursorColor"
 import { useRemoteCursorStyles, trackLocalActivity } from "../hooks/useRemoteCursorStyles"
+import AnimatedLanding from "../landing/AnimatedLanding"
 
 function getSocketUrl() {
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
@@ -243,7 +244,7 @@ function App() {
   }
 
   if (loading) return <main className="auth-page"><section className="auth-panel"><p className="muted">Connecting to MergeSpace...</p></section></main>
-  if (page === "landing") return <LandingExtended onEnter={() => enterApp("signup")} onLogin={() => enterApp("login")} configured={insforgeConfigured} />
+  if (page === "landing") return <AnimatedLanding onEnter={() => enterApp("signup")} onLogin={() => enterApp("login")} configured={insforgeConfigured} />
   if (page === "login" || page === "signup") return <Auth mode={page} onBack={returnHome} onSubmit={handleAuth} onProvider={signInWithProvider} onEmailCode={handleEmailCode} error={appError} configured={insforgeConfigured} />
 
   return (
