@@ -70,7 +70,7 @@ function Faq({ question, answer, defaultOpen = false, index }) {
   </div>
 }
 
-export default function AnimatedLanding({ onEnter, onLogin, configured }) {
+export default function AnimatedLanding({ onEnter, onLogin, configured, signedIn }) {
   const rootRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
   useLandingMotion(rootRef)
@@ -84,8 +84,8 @@ export default function AnimatedLanding({ onEnter, onLogin, configured }) {
   const jump = (id) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }) }
   return <main ref={rootRef} className="landing extended-landing motion-landing">
     <div className="landing-progress" aria-hidden="true"><span /></div>
-    <nav className="landing-nav"><button className="brand light" onClick={() => jump("top")}><span className="brand-mark">M</span>MergeSpace</button><div className="landing-links"><button className="text-button" onClick={() => jump("features")}>Features</button><button className="text-button" onClick={() => jump("how-it-works")}>How it works</button><button className="text-button" onClick={onLogin}>Log in</button><button className="nav-cta" onClick={onEnter}>Start building ↗</button></div><button type="button" className="menu-toggle" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="landing-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}><span /><span /><span /></button>
-      <div id="landing-mobile-menu" className={`mobile-menu${menuOpen ? " is-open" : ""}`} hidden={!menuOpen}><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button><button onClick={() => { setMenuOpen(false); onLogin() }}>Log in</button><button className="mobile-menu-cta" onClick={() => { setMenuOpen(false); onEnter() }}>Start building ↗</button></div>
+    <nav className="landing-nav"><button className="brand light" onClick={() => jump("top")}><span className="brand-mark">M</span>MergeSpace</button><div className="landing-links"><button className="text-button" onClick={() => jump("features")}>Features</button><button className="text-button" onClick={() => jump("how-it-works")}>How it works</button>{!signedIn && <button className="text-button" onClick={onLogin}>Log in</button>}<button className="nav-cta" onClick={onEnter}>{signedIn ? "Open dashboard ↗" : "Start building ↗"}</button></div><button type="button" className="menu-toggle" aria-label={menuOpen ? "Close menu" : "Open menu"} aria-expanded={menuOpen} aria-controls="landing-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}><span /><span /><span /></button>
+      <div id="landing-mobile-menu" className={`mobile-menu${menuOpen ? " is-open" : ""}`} hidden={!menuOpen}><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button>{!signedIn && <button onClick={() => { setMenuOpen(false); onLogin() }}>Log in</button>}<button className="mobile-menu-cta" onClick={() => { setMenuOpen(false); onEnter() }}>{signedIn ? "Open dashboard ↗" : "Start building ↗"}</button></div>
     </nav>
 
     <section className="landing-content" id="top">
@@ -93,7 +93,7 @@ export default function AnimatedLanding({ onEnter, onLogin, configured }) {
         <p className="kicker hero-rise" style={{ "--h": 0 }}>THE COLLABORATIVE CODE EDITOR</p>
         <h1 className="hero-title"><span className="hero-line"><span style={{ "--h": 1 }}>Make it real.</span></span><br /><span className="hero-line"><i style={{ "--h": 2 }}>Together.</i></span></h1>
         <p className="landing-lede hero-rise" style={{ "--h": 3 }}>A shared space for pair programming, live reviews, interviews, and the ideas your team ships next.</p>
-        <div className="hero-actions hero-rise" style={{ "--h": 4 }}><button className="primary-button magnetic" onClick={onEnter} {...magneticProps}>Create your workspace ↗</button><button className="landing-secondary" onClick={() => jump("how-it-works")}>See how it works</button></div>
+        <div className="hero-actions hero-rise" style={{ "--h": 4 }}><button className="primary-button magnetic" onClick={onEnter} {...magneticProps}>{signedIn ? "Open dashboard ↗" : "Create your workspace ↗"}</button><button className="landing-secondary" onClick={() => jump("how-it-works")}>See how it works</button></div>
         <p className="fine-print hero-rise" style={{ "--h": 5 }}>{configured ? "No installs · live editing · join from any browser" : "Add InsForge env vars to connect your backend"}</p>
       </div>
       <CodeUniverse />
@@ -163,7 +163,7 @@ export default function AnimatedLanding({ onEnter, onLogin, configured }) {
       <p className="kicker" data-reveal="up">PRESS SHARE. START CODING.</p>
       <h2 data-reveal="words"><Words text="Your next workspace is one click away." /></h2>
       <p data-reveal="up" style={{ "--d": "250ms" }}>Open a live editor, invite your team, and start collaborating in seconds.</p>
-      <button className="primary-button magnetic" data-reveal="up" style={{ "--d": "350ms" }} onClick={onEnter} {...magneticProps}>Start building free ↗</button>
+      <button className="primary-button magnetic" data-reveal="up" style={{ "--d": "350ms" }} onClick={onEnter} {...magneticProps}>{signedIn ? "Open dashboard ↗" : "Start building free ↗"}</button>
     </section>
 
     <footer className="landing-footer"><div><button className="brand light"><span className="brand-mark">M</span>MergeSpace</button><p>The shared workspace for pair programming, reviews, interviews, and teams that build together.</p></div><div><strong>Product</strong><button onClick={() => jump("features")}>Features</button><button onClick={() => jump("how-it-works")}>How it works</button></div><div><strong>Company</strong><a href="mailto:ankushgupta97412@gmail.com">Contact</a><a href="mailto:ankushgupta97412@gmail.com">Support</a></div><div><strong>Legal</strong><a href="/privacy">Privacy Policy</a><a href="/terms">Terms &amp; Conditions</a><button onClick={reopenCookieSettings}>Cookie settings</button></div><small>© {new Date().getFullYear()} MergeSpace. All rights reserved.</small></footer>

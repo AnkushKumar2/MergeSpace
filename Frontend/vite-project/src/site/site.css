@@ -77,3 +77,22 @@
   .app-shell .app-body{display:block}
 }
 @media (prefers-reduced-motion:reduce){.cookie-banner,.toast{animation:none}.app-shell .sidebar{transition:none}}
+
+/* Contact support page */
+.support-page .support-form{max-width:600px;margin-top:10px}
+.support-form select{padding:11px 12px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font:400 14px 'DM Sans',sans-serif;outline:none}
+.support-form select:focus{border-color:var(--coral)}
+.support-done{max-width:520px;margin:50px 0;padding:36px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.support-done h2{margin:14px 0 6px;font:700 22px Syne,sans-serif}
+.support-done p{color:var(--muted);margin:0 0 22px}
+.support-done-mark{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#dff1e9;color:#37755c;font-size:22px;font-weight:700}
+
+/* Sidebar brand + support entry are buttons now; restore their original look */
+button.sidebar-product{width:100%;background:none;text-align:left;color:var(--ink)}
+.sidebar-bottom>button.sidebar-help{gap:10px;align-items:center;margin-top:25px;padding:14px 10px;border-top:1px solid var(--line);border-radius:0;background:none;color:var(--ink);font-size:11px;width:100%}
+.sidebar-bottom>button.sidebar-help:hover,.sidebar-bottom>button.sidebar-help.active{background:#0000000a;color:var(--ink)}
+.sidebar-bottom>button.sidebar-help span{width:auto;font-size:inherit;text-align:left}
+.sidebar-bottom>button.sidebar-help .help-avatar{width:32px;height:32px;font-size:17px;text-align:center}
+.sidebar-bottom>button.sidebar-help span:last-child{display:grid;gap:4px;font-size:11px}
+.sidebar-bottom>button.sidebar-help strong{font-size:12px}
+.sidebar-bottom>button.sidebar-help small{color:var(--muted);font-size:11px}

@@ -9,6 +9,7 @@ const PAGES = {
   dashboard: { title: "Your workspaces | MergeSpace" },
   workspace: { title: "Editor | MergeSpace" },
   activity: { title: "Activity | MergeSpace" },
+  support: { title: "Contact support | MergeSpace" },
   settings: { title: "Workspace settings | MergeSpace" },
   invite: { title: "Invite teammates | MergeSpace" },
   profile: { title: "My profile | MergeSpace" },

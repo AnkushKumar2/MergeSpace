@@ -55,7 +55,10 @@ export function PrivacyPage() {
     <p>We keep your account and workspace data while your account is active. Deleting a workspace removes its files. To close your account or have data removed, email us and we will act on the request within a reasonable time. Some data may remain in backups for a short period.</p>
 
     <h2>5. Cookies and local storage</h2>
-    <p><strong>Essential:</strong> a sign-in session so you stay logged in, and a record of your cookie choice. These are needed for the site to work. <strong>Analytics:</strong> only loaded if you click “Accept analytics”. You can change your mind at any time with “Cookie settings” in the footer.</p>
+    <p><strong>Essential:</strong> a sign-in session so you stay logged in, and a record of your cookie choice. These are needed for the site to work. <strong>Analytics:</strong> only loaded if you click “Accept cookies”. You can change your mind at any time with “Cookie settings” in the footer.</p>
+
+    <h2>5a. Support messages</h2>
+    <p>If you contact support from inside MergeSpace, the name, email address and message you type are sent to our support inbox by an email-forwarding service (FormSubmit) so that we can reply. We use them only to answer you.</p>
 
     <h2>6. Security</h2>
     <p>Traffic is encrypted with HTTPS and workspace access is limited to the members of each workspace. No online service is perfectly secure, so please use a strong, unique password.</p>
